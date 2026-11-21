@@ -1,0 +1,23 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Linoutabbit//Rappels//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:lnthbt-rappel-0330@linoutabbit.github.io
+DTSTAMP:20261121T000000Z
+DTSTART:20261101T033000
+DTEND:20261101T034000
+RRULE:FREQ=DAILY
+SUMMARY:لِنُثَبِّتَ · ta journée
+DESCRIPTION:Note ce que tu as fait aujourd'hui dans l'appli.\nhttps://linou
+ tabbit.github.io/
+URL:https://linoutabbit.github.io/
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:لِنُثَبِّتَ · ta journée
+TRIGGER:PT0M
+END:VALARM
+END:VEVENT
+END:VCALENDAR
