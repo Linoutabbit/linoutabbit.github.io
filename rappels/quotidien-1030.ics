@@ -10,9 +10,8 @@ DTSTART:20261101T103000
 DTEND:20261101T104000
 RRULE:FREQ=DAILY
 SUMMARY:لِنُثَبِّتَ · ta journée
-DESCRIPTION:Note ce que tu as fait aujourd'hui dans l'appli.\nhttps://linou
- tabbit.github.io/
-URL:https://linoutabbit.github.io/
+DESCRIPTION:Ouvre لِنُثَبِّتَ depuis ton écran d'accueil et not
+ e ta journée.
 TRANSP:TRANSPARENT
 BEGIN:VALARM
 ACTION:DISPLAY

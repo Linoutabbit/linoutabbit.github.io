@@ -10,9 +10,8 @@ DTSTART:20261101T003000
 DTEND:20261101T004000
 RRULE:FREQ=DAILY
 SUMMARY:لِنُثَبِّتَ · يومك
-DESCRIPTION:سجّل ما أنجزته اليوم في التطبيق.\nhtt
- ps://linoutabbit.github.io/
-URL:https://linoutabbit.github.io/
+DESCRIPTION:افتح لِنُثَبِّتَ من الشاشة الرئيس
+ ية وسجّل يومك.
 TRANSP:TRANSPARENT
 BEGIN:VALARM
 ACTION:DISPLAY
