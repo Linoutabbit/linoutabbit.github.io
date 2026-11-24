@@ -2319,6 +2319,7 @@ function tourEnd() {
   V.tour = null; const el = document.getElementById('tour'); if (el) el.remove();
   if (V.tab !== 'jour') { V.tab = 'jour'; render(); window.scrollTo(0, 0); }
   S.meta = Object.assign({}, S.meta, { tourSeen: TOUR_V }); save();
+  remindAuto(); // sans attendre le prochain appui
 }
 function tourShow() {
   const T = V.tour; if (!T) return;
