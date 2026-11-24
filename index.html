@@ -598,6 +598,7 @@ h1.fri { color: var(--gold); }
 .banner.kask { flex-direction: column; align-items: stretch; gap: 10px; border-color: var(--gold); line-height: 1.45; }
 .kask-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .kask-acts .btn { flex: 1 1 40%; }
+.rm-skip { display: flex; justify-content: center; gap: 32px; margin-top: 4px; } .rm-skip .link { min-height: 44px; }
 /* navigateurs sans color-mix (anciens Samsung Internet, Android WebView) : couleurs pleines ou bordures à la place des teintes */
 @supports not (color: color-mix(in srgb, red 50%, blue)) {
   .goal.full { border-color: var(--good); } .goal.low { border-color: var(--danger); } .goal.ok { border-color: var(--warn); }
@@ -630,7 +631,7 @@ const $ = s => document.querySelector(s);
 const TAAHADOU = ['2026-11-01', '2027-01-31', '2027-06-20'];
 /* langue de l'interface (fr par défaut, ar en option) : lue avant tout le reste */
 /* fonctions encore réservées à la version test : build.py les coupe en prod (FEAT_PROD) */
-const FEAT = { ar: false, remind: false };
+const FEAT = { ar: false, remind: true };
 let LANG = 'fr'; try { if (FEAT.ar && localStorage.getItem('lnthbt-lang') === 'ar') LANG = 'ar'; } catch (e) {}
 const LOC = LANG === 'ar' ? 'ar-u-nu-latn' : 'fr-FR';
 const WD = LANG === 'ar' ? ['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'] : ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -1013,6 +1014,7 @@ function render() {
     <main>${view}</main></div>`;
   fitOne($('.top-row h1'), 17);
   tourAuto();
+  remindAuto();
 }
 /* une seule ligne : on réduit la police jusqu'à ce que ça tienne */
 function fitOne(el, min) {
@@ -1044,7 +1046,7 @@ function dayView() {
   if (c.wird.on) cards.push(wirdCard(k, future));
   if (kahfObj(k)) cards.push(kahfCard(k, future));
   const fri = isFri(k) && k >= c.created;
-  const ask = fri && k === t && !c.kahf.on && !S.meta.kahfAsked ? kahfAsk() : k === t && !c.stats && !S.meta.statsAsked && S.meta.tourSeen ? statsAsk() : k === t && FEAT.remind && !S.meta.remindAsked && S.meta.tourSeen && remindPlan().length ? remindAsk() : '';
+  const ask = fri && k === t && !c.kahf.on && !S.meta.kahfAsked ? kahfAsk() : k === t && !c.stats && !S.meta.statsAsked && S.meta.tourSeen ? statsAsk() : '';
   return `${fri ? hadithCard(k) : ''}${banners(k)}${win}${ask}<section><div class="sec-head"><h2>Objectifs du jour</h2><span>${os.length ? `${doneN} sur ${os.length} terminés` : ''}</span></div>
     ${cards.join('') || '<p class="note">Aucun objectif actif. Active-les dans les réglages.</p>'}${tOut && !future && k >= c.created ? `<button type="button" class="link" data-act="tah-did">J'ai participé à ${AR('تعاهدوا')}</button>` : ''}</section>
     <p class="foot">${statsOn() ? 'Ton suivi reste sur ce téléphone. Seules des statistiques anonymes sont envoyées.' : 'Tes données restent sur ce téléphone, dans ce navigateur.'}</p>`;
@@ -1700,7 +1702,7 @@ function vmMigApply(a) {
 
 /* ================= SHEETS ================= */
 function openSheet(s) { V.sheet = s; renderSheet(); $('#back').hidden = false; }
-function closeSheet() { saveHzNote(); V.sheet = null; $('#back').hidden = true; render(); }
+function closeSheet() { saveHzNote(); const s0 = V.sheet; if (s0 && s0.kind === 'remind' && s0.auto && remindDue(todayKey())) { S.meta = Object.assign({}, S.meta, { remindLater: todayKey() }); save(); } V.sheet = null; $('#back').hidden = true; render(); }
 function renderSheet() {
   const s = V.sheet; if (!s) return;
   const el = $('#sheet');
@@ -1825,7 +1827,7 @@ function settingsSheet(s) {
       <button type="button" class="set-item" data-act="pause"><div><b>${c.pause && c.pause.to >= todayKey() ? 'En pause' : 'Faire une pause'}</b><small>${c.pause && c.pause.to >= todayKey() ? esc(pauseWhatTxt(c.pause)) + ' jusqu\'au ' + esc(fmtDM.format(parseKey(c.pause.to))) : 'Examens, voyage, Ramadan : tout ou une partie'}</small></div>${ICON_CHEV}</button>
       <button type="button" class="set-item" data-act="backup"><div><b>Sauvegarde</b><small>${S.meta.lastBackup ? `Dernière le ${esc(fmtDM.format(parseKey(S.meta.lastBackup)))}` : 'Jamais faite'} · copier ou restaurer</small></div>${ICON_CHEV}</button>
       ${FEAT.ar ? `<div class="set-item lang-item"><div><b>Langue</b><small>Français ou العربية</small></div>${langSwitch()}</div>` : ''}
-      ${FEAT.remind ? `<button type="button" class="set-item" data-act="rm-open"><div><b>Rappels</b><small>${S.meta.remindSet ? 'Ajoutés à ton calendrier · en ajouter' : 'Dans le calendrier de ton téléphone'}</small></div>${ICON_CHEV}</button>` : ''}
+      ${FEAT.remind ? `<button type="button" class="set-item" data-act="rm-open"><div><b>Rappels</b><small>${S.meta.remindOn ? 'Ajouté à ton agenda' : 'Dans l\'agenda de ton téléphone'}</small></div>${ICON_CHEV}</button>` : ''}
       <button type="button" class="set-item" data-act="st-info"><div><b>Statistiques anonymes</b><small>${statsOn() ? 'Activées · ce qui est envoyé' : 'Désactivées · rien n\'est envoyé'}</small></div>${ICON_CHEV}</button>
       <button type="button" class="set-item" data-act="tour"><div><b>Revoir la visite</b><small>Les explications de chaque partie de l'appli</small></div>${ICON_CHEV}</button>
       <button type="button" class="set-item" data-act="rules"><div><b>Les consignes</b><small>Où sont tes données, comment ne pas les perdre</small></div>${ICON_CHEV}</button>
@@ -2186,53 +2188,44 @@ function i18nStart() {
 function setLang(l) { try { localStorage.setItem('lnthbt-lang', l); } catch (e) {} location.reload(); }
 const langSwitch = () => `<div class="lang-sw" role="group" aria-label="Langue"><button type="button" data-act="lang" data-v="fr" aria-pressed="${LANG === 'fr'}">Français</button><button type="button" data-act="lang" data-v="ar" aria-pressed="${LANG === 'ar'}" lang="ar">العربية</button></div>`;
 
-/* ================= RAPPELS (sans notifications : on passe par le calendrier du téléphone) =================
-   Selon la fréquence des objectifs : tous les jours (révision perso, wird), sinon les jours de passage,
-   sinon quelques fois par semaine (passages « X par semaine ») et le dimanche (minimum par mois). */
-const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-const DAYN = DOW_LONG;
+/* ================= RAPPELS (sans notifications : on passe par l'agenda du téléphone) =================
+   Un seul rappel par jour, proposé dès qu'il y a un objectif (révision perso, wird ou passages) ; chacun l'accepte ou non.
+   L'iPhone refuse un fichier .ics fabriqué dans la page : les fichiers sont préparés à l'avance (rappels.py),
+   un par demi-heure, en heure locale, avec une alerte, et servis par GitHub Pages (aucun service extérieur). */
 function remindPlan() {
-  const c = C(), daily = c.rev.on || c.wird.on, p = c.pass, out = [];
-  const what = [c.rev.on && 'ta révision', c.wird.on && 'ton wird', p.on && 'tes passages'].filter(Boolean);
-  if (daily) out.push({ days: [0, 1, 2, 3, 4, 5, 6], title: 'لِنُثَبِّتَ · ta journée', txt: 'Tous les jours', body: `Note ${what.join(', ').replace(/, ([^,]*)$/, ' et $1')}.` });
-  else if (p.on && p.mode === 'fixed' && (p.days || []).length) out.push({ days: p.days.slice().sort(), title: 'لِنُثَبِّتَ · ton passage', txt: 'Les jours de passage', body: `Note ton passage avec ${TT()}.` });
-  else if (p.on && p.mode === 'quota') { const n = Math.min(7, p.perWeek || 1), pick = { 1: [6], 2: [3, 6], 3: [1, 3, 5], 4: [1, 3, 5, 0], 5: [1, 2, 3, 4, 5], 6: [1, 2, 3, 4, 5, 6], 7: [0, 1, 2, 3, 4, 5, 6] }[n]; out.push({ days: pick, title: 'لِنُثَبِّتَ · tes passages', txt: `${n} fois par semaine`, body: `Où en sont tes passages cette semaine ? Note-les.` }); }
-  else if (p.on && p.mode === 'month') out.push({ days: [0], title: 'لِنُثَبِّتَ · tes passages du mois', txt: 'Chaque dimanche', body: 'Où en sont tes passages ce mois-ci ? Note-les.' });
-  return out;
+  const c = C(); if (!(c.rev.on || c.wird.on || c.pass.on)) return [];
+  const what = [c.rev.on && 'ta révision', c.wird.on && 'ton wird', c.pass.on && 'tes passages'].filter(Boolean);
+  return [{ body: `Note ${what.join(', ').replace(/, ([^,]*)$/, ' et $1')}.` }];
 }
-const remindDaysTxt = d => d.length === 7 ? 'tous les jours' : d.map(x => DAYN[x]).join(', ').replace(/, ([^,]*)$/, ' et $1');
 const pad2 = n => String(n).padStart(2, '0');
-function remindFirst(days, hm) { const [h, m] = hm.split(':').map(Number), now = new Date(); for (let i = 0; i < 8; i++) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, h, m); if (days.includes(d.getDay()) && d > now) return d; } return new Date(now.getTime() + 864e5); }
-const icsDate = d => `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}T${pad2(d.getHours())}${pad2(d.getMinutes())}00`;
-const appUrl = () => location.origin + location.pathname;
-function remindIcs(hm) {
-  const esc2 = t => String(t).replace(/[\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
-  const ev = remindPlan().map((r, i) => { const d = remindFirst(r.days, hm), e = new Date(d.getTime() + 10 * 6e4);
-    return ['BEGIN:VEVENT', `UID:lnthbt-${Date.now()}-${i}@linoutabbit.github.io`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(d)}`, `DTEND:${icsDate(e)}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${r.days.map(x => BYDAY[x]).join(',')}`, `SUMMARY:${esc2(r.title)}`, `DESCRIPTION:${esc2(r.body + '\n' + appUrl())}`, `URL:${appUrl()}`,
-      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc2(r.title)}`, 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT'].join('\r\n'); });
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Linoutabbit//FR', 'CALSCALE:GREGORIAN', ...ev, 'END:VCALENDAR'].join('\r\n');
+const RM_SLOTS = Array.from({ length: 48 }, (_, i) => `${pad2(Math.floor(i / 2))}:${i % 2 ? '30' : '00'}`);
+const remindFile = hm => `https://linoutabbit.github.io/rappels/quotidien-${LANG === 'ar' ? 'ar-' : ''}${hm.replace(':', '')}.ics`;
+const isStandalone = () => { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } };
+/* le rappel est proposé dans une fenêtre qui s'ouvre d'elle-même sur Aujourd'hui (une fois par ouverture de l'appli),
+   après la visite guidée et la question des statistiques ; elle revient 7 jours après « Plus tard » (ou fermée sans choisir),
+   plus jamais après « Non merci » ou un rappel ajouté. Les anciens boutons (avant les fichiers .ics) ne comptent plus. */
+function remindDue(t) {
+  const m = S.meta;
+  return FEAT.remind && !m.remindNo && !m.remindOn && !!m.tourSeen && !(m.remindLater && t < addDays(m.remindLater, 7)) && remindPlan().length > 0;
 }
-function remindGoogle(r, hm) {
-  const d = remindFirst(r.days, hm), e = new Date(d.getTime() + 10 * 6e4), tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Europe/Paris';
-  const q = new URLSearchParams({ action: 'TEMPLATE', text: r.title, details: r.body + '\n' + appUrl(), dates: `${icsDate(d)}/${icsDate(e)}`, recur: `RRULE:FREQ=WEEKLY;BYDAY=${r.days.map(x => BYDAY[x]).join(',')}`, ctz: tz });
-  return 'https://calendar.google.com/calendar/render?' + q.toString();
-}
-const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-function remindAsk() {
-  return `<div class="banner kask"><div><b>Pense à ton suivi</b>L'appli n'envoie pas de notifications. Ajoute un rappel dans le calendrier de ton téléphone, à l'heure qui t'arrange.</div>
-    <div class="kask-acts"><button type="button" class="btn primary" data-act="rm-open">Ajouter un rappel</button><button type="button" class="link" data-act="rm-later">Plus tard</button></div></div>`;
+const remindPopDue = () => { const t = todayKey(), c = C(); return remindDue(t) && !!(c.stats || S.meta.statsAsked) && !(isFri(t) && t >= c.created && !c.kahf.on && !S.meta.kahfAsked); };
+function remindAuto() {
+  if (V.rmAuto || V.rmWait || V.tab !== 'jour' || V.sel !== todayKey() || !remindPopDue()) return;
+  V.rmWait = true;
+  setTimeout(() => { V.rmWait = false; if (V.rmAuto || V.sheet || V.onb || V.tour || V.tab !== 'jour' || !remindPopDue()) return; V.rmAuto = true; openSheet({ kind: 'remind', hm: '21:00', auto: true }); }, 900);
 }
 function remindSheet(s) {
   const plan = remindPlan(), hm = s.hm || '21:00';
-  if (!plan.length) return `<div class="sh-head"><div><h2>Rappels</h2><p class="hint">Active d'abord un objectif (révision, wird ou passages).</p></div></div><div class="acts"><button type="button" class="btn" data-act="close">Fermer</button></div>`;
-  return `<div class="sh-head"><div><h2>Ajouter un rappel</h2><p class="hint">L'appli n'envoie pas de notifications : ton calendrier le fera pour toi, selon tes objectifs.</p></div></div>
-    ${plan.map(r => `<div class="rm-row"><b>${esc(r.txt)}</b><small>${r.days.length === 7 || r.days.length === 1 && r.txt.startsWith('Chaque') ? '' : esc(remindDaysTxt(r.days)) + ' · '}${esc(r.body)}</small></div>`).join('')}
-    <div class="field"><span>À quelle heure ?</span><input class="input" id="rm-hm" type="time" value="${hm}"></div>
-    <div class="acts">${isIOS() ? `<button type="button" class="btn primary" data-act="rm-ics">Ajouter au calendrier de l'iPhone</button>${plan.map(r => `<a class="btn" data-act="rm-g" href="${remindGoogle(r, hm)}" target="_blank" rel="noopener">Google Agenda</a>`).join('')}`
-      : `${plan.map(r => `<a class="btn primary" data-act="rm-g" href="${remindGoogle(r, hm)}" target="_blank" rel="noopener">Ajouter à Google Agenda</a>`).join('')}<button type="button" class="btn" data-act="rm-ics">Autre calendrier (fichier .ics)</button>`}
-      <button type="button" class="btn" data-act="close">Fermer</button></div>
-    <p class="hint">Le rappel s'ouvre dans ton calendrier : vérifie l'heure, puis touche « Ajouter ». Tu pourras le modifier ou le supprimer dans ton calendrier.</p>`;
+  if (!plan.length) return `<div class="sh-head"><div><h2>Rappels</h2><p class="hint">Active d'abord un objectif (révision, wird ou passages) pour ajouter un rappel.</p></div></div><div class="acts"><button type="button" class="btn" data-act="close">Fermer</button></div>`;
+  const head = s.auto ? `<h2>Pense à ton suivi</h2><p class="hint">L'appli n'envoie pas de notifications. Ajoute un rappel dans l'agenda de ton téléphone, à l'heure qui t'arrange.</p>`
+    : `<h2>Ajouter un rappel</h2><p class="hint">L'appli n'envoie pas de notifications : ton agenda te le rappellera chaque jour.</p>`;
+  const add = `<a class="btn primary" id="rm-add" data-act="rm-add" href="${remindFile(hm)}"${isStandalone() ? ' target="_blank" rel="noopener"' : ''}>Ajouter à l'agenda</a>`;
+  return `<div class="sh-head"><div>${head}</div></div>
+    <div class="rm-row"><b>Tous les jours</b><small>${esc(plan[0].body)}</small></div>
+    <div class="field"><span>À quelle heure ?</span><select class="input" id="rm-hm">${RM_SLOTS.map(x => `<option value="${x}"${x === hm ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
+    ${s.auto ? `<div class="acts">${add}</div><div class="rm-skip"><button type="button" class="link" data-act="rm-later">Plus tard</button><button type="button" class="link" data-act="rm-no">Non merci</button></div>`
+      : `<div class="acts">${add}<button type="button" class="btn" data-act="close">Fermer</button></div>`}
+    <p class="hint">Sur iPhone, confirme l'ajout dans Calendrier. Sur Android, ouvre le fichier téléchargé avec ton agenda. Pour changer d'heure plus tard, supprime l'ancien rappel dans ton agenda.</p>`;
 }
 
 /* ================= DÉMÉNAGEMENT (ancienne adresse → nouvelle) =================
@@ -2325,6 +2318,7 @@ function tourEnd() {
   V.tour = null; const el = document.getElementById('tour'); if (el) el.remove();
   if (V.tab !== 'jour') { V.tab = 'jour'; render(); window.scrollTo(0, 0); }
   S.meta = Object.assign({}, S.meta, { tourSeen: TOUR_V }); save();
+  remindAuto(); // sans attendre le prochain appui
 }
 function tourShow() {
   const T = V.tour; if (!T) return;
@@ -2537,14 +2531,9 @@ document.addEventListener('click', e => {
     case 'tr-take': S = Object.assign(blank(), V.transferData); migrate(); S.meta = Object.assign({}, S.meta, { transferred: todayKey() }); save(); V.transferData = null; V.onb = null; V.sel = todayKey(); closeSheet(); render(); toast('Ton suivi a été transféré. بارك الله فيك'); break;
     case 'lang': if (V.onb && steps()[V.onb.step][0] === 'langue') { if (b.dataset.v === LANG) { V.onb.step++; renderOnb(); window.scrollTo(0, 0); } else { try { sessionStorage.setItem('lnthbt-onb-go', '1'); } catch (e) {} setLang(b.dataset.v); } } else setLang(b.dataset.v); break;
     case 'rm-open': openSheet({ kind: 'remind', hm: '21:00' }); break;
-    case 'rm-later': S.meta = Object.assign({}, S.meta, { remindAsked: todayKey() }); save(); render(); break;
-    case 'rm-ics': {
-      const ics = remindIcs(s.hm || '21:00'); S.meta = Object.assign({}, S.meta, { remindAsked: todayKey(), remindSet: todayKey() }); save();
-      if (isIOS()) location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-      else { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' })); a.download = 'linoutabbit-rappel.ics'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
-      break;
-    }
-    case 'rm-g': S.meta = Object.assign({}, S.meta, { remindAsked: todayKey(), remindSet: todayKey() }); save(); break;
+    case 'rm-later': S.meta = Object.assign({}, S.meta, { remindLater: todayKey() }); save(); if (V.sheet) closeSheet(); else render(); break;
+    case 'rm-no': S.meta = Object.assign({}, S.meta, { remindNo: todayKey() }); save(); if (V.sheet) closeSheet(); else render(); toast('C\'est noté. Tu pourras toujours en ajouter un dans Réglages.'); break;
+    case 'rm-add': S.meta = Object.assign({}, S.meta, { remindOn: todayKey() }); save(); setTimeout(() => { if (V.sheet && V.sheet.kind === 'remind') closeSheet(); }, 500); break;
     case 'tr-keep': V.transferData = null; closeSheet(); render(); break;
     case 'kahf-set': {
       const v = b.dataset.v; S.meta = Object.assign({}, S.meta, { kahfAsked: true });
@@ -2616,7 +2605,7 @@ function onInput(e) {
     else { const ss = +($('#vm-ss-' + x).value), sv = clampInt($('#vm-sv-' + x).value || 1, 1, R.counts[ss - 1]); p.start = gidOf(R, ss, sv); p.choose = null; if (p.es < ss) p.es = ss; if (p.rev && p.mode === 'hz') revHzEnd(R, p); if (m[1] === 'ss' && e.type === 'change') renderSheet(); else vmLive(s, x); }
     return;
   }
-  if (s && s.kind === 'remind' && el.id === 'rm-hm') { if (/^\d{2}:\d{2}$/.test(el.value)) { s.hm = el.value; const plan = remindPlan(); document.querySelectorAll('#sheet a[data-act="rm-g"]').forEach((a, i) => { if (plan[i]) a.href = remindGoogle(plan[i], s.hm); }); } return; }
+  if (s && s.kind === 'remind' && el.id === 'rm-hm') { if (RM_SLOTS.includes(el.value)) { s.hm = el.value; const a = $('#rm-add'); if (a) a.href = remindFile(s.hm); } return; }
   if (s && s.kind === 'pass' && el.id && el.id.startsWith('ps-err-')) s.errs[el.dataset.hz] = el.value;
   if (s && s.kind === 'hz' && el.id === 'hz-note') saveHzNote();
 }
