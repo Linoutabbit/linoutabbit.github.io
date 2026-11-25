@@ -2201,6 +2201,10 @@ const pad2 = n => String(n).padStart(2, '0');
 const RM_SLOTS = Array.from({ length: 48 }, (_, i) => `${pad2(Math.floor(i / 2))}:${i % 2 ? '30' : '00'}`);
 const remindFile = hm => `https://linoutabbit.github.io/rappels/quotidien-${LANG === 'ar' ? 'ar-' : ''}${hm.replace(':', '')}.ics`;
 const isStandalone = () => { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } };
+/* iPhone, appli lancée depuis l'écran d'accueil : un lien s'y ouvre dans un mini-navigateur qui ne sait pas lire un .ics
+   (page blanche). L'adresse x-safari-https:// est confiée à Safari, qui propose d'ajouter le rappel (non documenté par Apple). */
+const isIOSApp = () => { try { const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); return navigator.standalone === true || (ios && matchMedia('(display-mode: standalone)').matches); } catch (e) { return false; } };
+const remindHref = hm => isIOSApp() ? remindFile(hm).replace(/^https:/, 'x-safari-https:') : remindFile(hm);
 /* le rappel est proposé dans une fenêtre qui s'ouvre d'elle-même sur Aujourd'hui (une fois par ouverture de l'appli),
    après la visite guidée et la question des statistiques ; elle revient 7 jours après « Plus tard » (ou fermée sans choisir),
    plus jamais après « Non merci » ou un rappel ajouté. Les anciens boutons (avant les fichiers .ics) ne comptent plus. */
@@ -2219,13 +2223,13 @@ function remindSheet(s) {
   if (!plan.length) return `<div class="sh-head"><div><h2>Rappels</h2><p class="hint">Active d'abord un objectif (révision, wird ou passages) pour ajouter un rappel.</p></div></div><div class="acts"><button type="button" class="btn" data-act="close">Fermer</button></div>`;
   const head = s.auto ? `<h2>Pense à ton suivi</h2><p class="hint">L'appli n'envoie pas de notifications. Ajoute un rappel dans l'agenda de ton téléphone, à l'heure qui t'arrange.</p>`
     : `<h2>Ajouter un rappel</h2><p class="hint">L'appli n'envoie pas de notifications : ton agenda te le rappellera chaque jour.</p>`;
-  const add = `<a class="btn primary" id="rm-add" data-act="rm-add" href="${remindFile(hm)}"${isStandalone() ? ' target="_blank" rel="noopener"' : ''}>Ajouter à l'agenda</a>`;
+  const add = `<a class="btn primary" id="rm-add" data-act="rm-add" href="${remindHref(hm)}"${!isIOSApp() && isStandalone() ? ' target="_blank" rel="noopener"' : ''}>Ajouter à l'agenda</a>`;
   return `<div class="sh-head"><div>${head}</div></div>
     <div class="rm-row"><b>Tous les jours</b><small>${esc(plan[0].body)}</small></div>
     <div class="field"><span>À quelle heure ?</span><select class="input" id="rm-hm">${RM_SLOTS.map(x => `<option value="${x}"${x === hm ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
     ${s.auto ? `<div class="acts">${add}</div><div class="rm-skip"><button type="button" class="link" data-act="rm-later">Plus tard</button><button type="button" class="link" data-act="rm-no">Non merci</button></div>`
       : `<div class="acts">${add}<button type="button" class="btn" data-act="close">Fermer</button></div>`}
-    <p class="hint">Sur iPhone, confirme l'ajout dans Calendrier. Sur Android, ouvre le fichier téléchargé avec ton agenda. Pour changer d'heure plus tard, supprime l'ancien rappel dans ton agenda.</p>`;
+    <p class="hint">${isIOSApp() ? "Safari va s'ouvrir : confirme l'ajout, puis reviens dans l'appli. Pour changer d'heure plus tard, supprime l'ancien rappel dans ton agenda." : "Sur iPhone, confirme l'ajout dans Calendrier. Sur Android, ouvre le fichier téléchargé avec ton agenda. Pour changer d'heure plus tard, supprime l'ancien rappel dans ton agenda."}</p>`;
 }
 
 /* ================= DÉMÉNAGEMENT (ancienne adresse → nouvelle) =================
@@ -2605,7 +2609,7 @@ function onInput(e) {
     else { const ss = +($('#vm-ss-' + x).value), sv = clampInt($('#vm-sv-' + x).value || 1, 1, R.counts[ss - 1]); p.start = gidOf(R, ss, sv); p.choose = null; if (p.es < ss) p.es = ss; if (p.rev && p.mode === 'hz') revHzEnd(R, p); if (m[1] === 'ss' && e.type === 'change') renderSheet(); else vmLive(s, x); }
     return;
   }
-  if (s && s.kind === 'remind' && el.id === 'rm-hm') { if (RM_SLOTS.includes(el.value)) { s.hm = el.value; const a = $('#rm-add'); if (a) a.href = remindFile(s.hm); } return; }
+  if (s && s.kind === 'remind' && el.id === 'rm-hm') { if (RM_SLOTS.includes(el.value)) { s.hm = el.value; const a = $('#rm-add'); if (a) a.href = remindHref(s.hm); } return; }
   if (s && s.kind === 'pass' && el.id && el.id.startsWith('ps-err-')) s.errs[el.dataset.hz] = el.value;
   if (s && s.kind === 'hz' && el.id === 'hz-note') saveHzNote();
 }
